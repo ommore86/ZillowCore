@@ -104,7 +104,7 @@ export const DeveloperPortalPage: React.FC = () => {
 
         <div className="flex items-center space-x-2.5">
           <a
-            href="http://localhost:8000/docs"
+            href={`${ApiService.getBaseUrl().replace(/\/api\/v1\/?$/, '')}/docs`}
             target="_blank"
             rel="noreferrer"
             className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-semibold transition shadow-xs"

@@ -1,3 +1,5 @@
+const PRODUCTION_API_URL = 'https://estateos-api-mowy.onrender.com/api/v1';
+
 const normalizeApiUrl = (rawUrl?: string): string | null => {
   if (!rawUrl) return null;
   let clean = rawUrl.trim();
@@ -20,25 +22,45 @@ const normalizeApiUrl = (rawUrl?: string): string | null => {
 
 const getBaseUrl = (): string => {
   if (typeof window !== 'undefined') {
-    // 1. Runtime override from window or localStorage
-    const runtimeUrl = (window as any).__ESTATEOS_API_URL__ || localStorage.getItem('estateos_api_url');
-    if (runtimeUrl) {
-      const normalized = normalizeApiUrl(runtimeUrl);
-      if (normalized) return normalized;
+    const isLocal =
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      window.location.hostname === '0.0.0.0';
+
+    // 1. If running locally on Vite dev server (port 3000 / 5173), route through relative /api/v1 proxy
+    if (isLocal && (window.location.port === '3000' || window.location.port === '5173')) {
+      return '/api/v1';
     }
 
-    // 2. If running locally on Vite dev server (port 3000 / 5173), route through relative /api/v1 proxy
-    if (window.location.port === '3000' || window.location.port === '5173') {
-      return '/api/v1';
+    // 2. Runtime override from window or localStorage
+    const runtimeUrl = (window as any).__ESTATEOS_API_URL__ || localStorage.getItem('estateos_api_url');
+    if (runtimeUrl) {
+      // If we are on production (e.g. Vercel), ignore any stale localhost setting saved in localStorage
+      if (!isLocal && (runtimeUrl.includes('127.0.0.1') || runtimeUrl.includes('localhost'))) {
+        localStorage.removeItem('estateos_api_url');
+      } else {
+        const normalized = normalizeApiUrl(runtimeUrl);
+        if (normalized) return normalized;
+      }
+    }
+
+    // 3. Environment variables configured during build (VITE_API_BASE_URL or VITE_API_URL)
+    const envUrl = (import.meta as any).env?.VITE_API_BASE_URL || (import.meta as any).env?.VITE_API_URL;
+    const normalizedEnv = normalizeApiUrl(envUrl);
+    if (normalizedEnv) return normalizedEnv;
+
+    // 4. If deployed on Vercel or any remote domain, automatically connect to Render backend
+    if (!isLocal) {
+      return PRODUCTION_API_URL;
     }
   }
 
-  // 3. Environment variables configured during Render build (VITE_API_BASE_URL or VITE_API_URL)
+  // 5. Environment variables fallback
   const envUrl = (import.meta as any).env?.VITE_API_BASE_URL || (import.meta as any).env?.VITE_API_URL;
   const normalizedEnv = normalizeApiUrl(envUrl);
   if (normalizedEnv) return normalizedEnv;
 
-  // 4. Default fallback for local testing
+  // 6. Default fallback for local testing
   return 'http://127.0.0.1:8000/api/v1';
 };
 
@@ -104,10 +126,8 @@ export class ApiService {
         } catch (fallbackErr: any) {
           throw new Error('Local backend server is unreachable. Please verify EstateOS backend is running on port 8000.');
         }
-      } else if (primaryUrl.includes('127.0.0.1') || primaryUrl.includes('localhost')) {
-        throw new Error('Deployed frontend cannot reach localhost. Please connect to your live Render backend URL below.');
       } else {
-        throw new Error(`Cannot connect to backend (${primaryUrl}). Render free tier may be waking up (cold start takes ~45s) or still building. Please wait a moment.`);
+        throw new Error(`Cannot connect to backend server. Render free tier may be waking up (cold start takes ~30-45s). Please wait a moment and try again.`);
       }
     }
 

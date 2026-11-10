@@ -11,17 +11,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   const [password, setPassword] = useState('Admin@123');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showConfig, setShowConfig] = useState(false);
-  const [backendUrl, setBackendUrl] = useState(ApiService.getBaseUrl());
-  const [urlSaved, setUrlSaved] = useState(false);
-
-  const handleSaveBackendUrl = (e: React.FormEvent) => {
-    e.preventDefault();
-    ApiService.setCustomApiUrl(backendUrl);
-    setUrlSaved(true);
-    setError(null);
-    setTimeout(() => setUrlSaved(false), 2000);
-  };
 
   const handleLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -65,27 +54,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
         {/* Login Card */}
         <div className="bg-white border border-slate-200 rounded-3xl p-7 shadow-xl space-y-4">
           {error && (
-            <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs space-y-2">
+            <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs">
               <p className="font-medium">{error}</p>
-              <div className="pt-2 border-t border-red-200/60">
-                <p className="text-[11px] text-red-600 mb-1.5 font-semibold">Connect to your live Render Backend:</p>
-                <form onSubmit={handleSaveBackendUrl} className="flex items-center space-x-1.5">
-                  <input
-                    type="text"
-                    value={backendUrl}
-                    onChange={(e) => setBackendUrl(e.target.value)}
-                    placeholder="https://estateos-api-xxxx.onrender.com"
-                    className="flex-1 px-2.5 py-1.5 bg-white border border-red-300 rounded-lg text-slate-800 text-xs font-mono focus:outline-none"
-                  />
-                  <button
-                    type="submit"
-                    className="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white font-semibold text-xs transition"
-                  >
-                    Connect
-                  </button>
-                </form>
-                {urlSaved && <p className="text-[10px] text-emerald-600 mt-1 font-semibold">Backend URL saved! Click Sign In to connect.</p>}
-              </div>
             </div>
           )}
 
@@ -202,38 +172,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                 <span>🔑 Resident / Tenant</span>
                 <span className="text-[9px] text-slate-400 font-mono">Resident Portal</span>
               </button>
-            </div>
-
-            {/* Backend URL Configuration */}
-            <div className="pt-2 text-center">
-              <button
-                type="button"
-                onClick={() => setShowConfig(!showConfig)}
-                className="text-[10px] text-slate-400 hover:text-primary-600 underline transition"
-              >
-                {showConfig ? 'Hide Backend Settings' : '⚙️ Configure Backend Server URL'}
-              </button>
-              {showConfig && (
-                <form onSubmit={handleSaveBackendUrl} className="mt-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-left space-y-1.5">
-                  <label className="text-[10px] text-slate-500 font-semibold block">Backend API URL:</label>
-                  <div className="flex items-center space-x-1">
-                    <input
-                      type="text"
-                      value={backendUrl}
-                      onChange={(e) => setBackendUrl(e.target.value)}
-                      placeholder="https://estateos-api-xxxx.onrender.com"
-                      className="flex-1 px-2 py-1 bg-white border border-slate-300 rounded-lg text-slate-800 text-[11px] font-mono focus:outline-none"
-                    />
-                    <button
-                      type="submit"
-                      className="px-2.5 py-1 rounded-lg bg-primary-600 hover:bg-primary-500 text-white font-semibold text-[11px] transition"
-                    >
-                      Save
-                    </button>
-                  </div>
-                  {urlSaved && <p className="text-[10px] text-emerald-600 font-semibold">Saved! Click Sign In to connect.</p>}
-                </form>
-              )}
             </div>
           </div>
         </div>

@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Environments & secrets
+.env
+.env.local
+*.db
+*.sqlite3
+
+# Distribution & Build
+frontend/dist/
+dist/
+build/
+*.egg-info/
+
+# Uploads & Temp
+uploads/
+/tmp/
+
+# Logs
+*.log
+.DS_Store
+

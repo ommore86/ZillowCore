@@ -61,6 +61,19 @@ export class ApiService {
     return this.token;
   }
 
+  static getBaseUrl(): string {
+    return getBaseUrl();
+  }
+
+  static setCustomApiUrl(url: string) {
+    const trimmed = url.trim();
+    if (trimmed) {
+      localStorage.setItem('estateos_api_url', trimmed);
+    } else {
+      localStorage.removeItem('estateos_api_url');
+    }
+  }
+
   private static async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const token = this.getToken();
     const headers: Record<string, string> = {
@@ -89,10 +102,12 @@ export class ApiService {
             headers,
           });
         } catch (fallbackErr: any) {
-          throw new Error('Backend server is unreachable. Please verify EstateOS backend is running on port 8000.');
+          throw new Error('Local backend server is unreachable. Please verify EstateOS backend is running on port 8000.');
         }
+      } else if (primaryUrl.includes('127.0.0.1') || primaryUrl.includes('localhost')) {
+        throw new Error('Deployed frontend cannot reach localhost. Please connect to your live Render backend URL below.');
       } else {
-        throw new Error('Backend server is unreachable. Please verify EstateOS backend is running on port 8000.');
+        throw new Error(`Cannot connect to backend (${primaryUrl}). Render free tier may be waking up (cold start takes ~45s) or still building. Please wait a moment.`);
       }
     }
 

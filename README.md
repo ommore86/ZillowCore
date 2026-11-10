@@ -180,6 +180,3 @@ All demo accounts are pre-seeded with the password: `Admin@123`
 | **Real Estate Agent** | `agent@estateos.ai` | Premier Agent CRM, Kanban leads pipeline, deal offers |
 | **Accountant** | `finance@estateos.ai` | Accounts receivable, GST tax ledgers, P&L reporting |
 | **Tenant** | `tenant@estateos.ai` | Resident portal, payment submission, maintenance tickets |
-
-**Pre-Configured Developer Sandbox API Key:**  
-`eos_live_demo1234567890abcdef`

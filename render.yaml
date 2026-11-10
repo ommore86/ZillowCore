@@ -66,18 +66,9 @@ services:
       - key: GEMINI_API_KEY
         sync: false
 
-  # 2. Free Redis-compatible Key Value
-  - type: keyvalue
-    name: estateos-redis
-    region: oregon
-    plan: free
-    ipAllowList: []
-    maxmemoryPolicy: noeviction
-    persistenceMode: off
-
 databases:
 
-  # 3. Free PostgreSQL
+  # 2. Free PostgreSQL
   - name: estateos-postgres
     databaseName: estateos
     user: estateos_admin

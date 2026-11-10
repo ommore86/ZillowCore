@@ -1,0 +1,39 @@
+services:
+  # 1. FastAPI Enterprise Backend
+  - type: web
+    name: estateos-api
+    runtime: python
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: estateos-postgres
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: AI_DEMO_MODE
+        value: "true"
+      - key: PYTHONPATH
+        value: "backend"
+
+  # 2. Next.js / React Frontend Static Site
+  - type: web
+    name: estateos-web
+    runtime: static
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: frontend/dist
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: estateos-api
+          property: host
+
+databases:
+  # 3. PostgreSQL Database
+  - name: estateos-postgres
+    databaseName: estateos
+    user: estateos_admin
+    plan: free
+

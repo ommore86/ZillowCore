@@ -1,0 +1,22 @@
+[package]
+name = "estateos-ai"
+version = "1.0.0"
+description = "EstateOS AI — The Autonomous Real Estate Operating System Desktop Edition"
+authors = ["DeepMind Engineering Team"]
+license = "MIT"
+repository = "https://github.com/estateos/estateos-ai"
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "1.5", features = [] }
+
+[dependencies]
+tauri = { version = "1.8", features = [ "shell-open", "notification", "window-close", "window-hide", "window-maximize", "window-minimize", "window-unmaximize", "window-show" ] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[features]
+# this feature is used for production builds or when `devPath` points to the filesystem
+# DO NOT REMOVE!!
+custom-protocol = ["tauri/custom-protocol"]
+

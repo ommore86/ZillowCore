@@ -1,33 +1,25 @@
-# ==============================================================================
-# EstateOS AI — Render Blueprint Configuration (Infrastructure-as-Code)
-# Multi-Tenant Real Estate Operating System
-# Services:
-#   1. estateos-api (FastAPI REST & WebSocket Web Service)
-#   2. estateos-ai-worker (Autonomous LangGraph 24-Agent Background Worker)
-#   3. estateos-web (React / Vite Static Single-Page Application)
-#   4. estateos-redis (In-Memory Task Queue & Pub/Sub Broker)
-#   5. estateos-postgres (Managed PostgreSQL Database)
-# ==============================================================================
 
 services:
-  # ----------------------------------------------------------------------------
-  # 1. FastAPI Enterprise Backend (REST APIs, WebSockets & Healthcheck)
-  # ----------------------------------------------------------------------------
+  # 1. FastAPI backend
   - type: web
     name: estateos-api
     runtime: python
-    region: oregon
+    region: singapore
     plan: starter
-    autoDeploy: true
     branch: main
+    autoDeploy: true
+
     buildCommand: pip install --upgrade pip && pip install -r backend/requirements.txt
     preDeployCommand: python backend/scripts/migrate_and_seed.py
     startCommand: uvicorn app.main:app --app-dir backend --host 0.0.0.0 --port $PORT
+
     healthCheckPath: /health
+
     disk:
       name: estateos-storage
       mountPath: /var/data
       sizeGB: 10
+
     envVars:
       - key: PYTHON_VERSION
         value: 3.10.11
@@ -41,7 +33,7 @@ services:
           property: connectionString
       - key: REDIS_URL
         fromService:
-          type: redis
+          type: keyvalue
           name: estateos-redis
           property: connectionString
       - key: SECRET_KEY
@@ -49,7 +41,7 @@ services:
       - key: AI_DEMO_MODE
         value: "true"
       - key: CORS_ORIGIN_REGEX
-        value: "^https:\\/\\/.*\\.onrender\\.com$"
+        sync: false
       - key: STORAGE_BACKEND
         value: local
       - key: UPLOAD_DIR
@@ -59,22 +51,18 @@ services:
       - key: GEMINI_API_KEY
         sync: false
 
-  # ----------------------------------------------------------------------------
-  # 2. AI Background Worker Daemon (24 Specialized Domain Agents)
-  # ----------------------------------------------------------------------------
+  # 2. AI background worker
   - type: worker
     name: estateos-ai-worker
     runtime: python
-    region: oregon
+    region: singapore
     plan: starter
-    autoDeploy: true
     branch: main
+    autoDeploy: true
+
     buildCommand: pip install --upgrade pip && pip install -r backend/requirements.txt
-    startCommand: python backend/app/worker.py
-    disk:
-      name: estateos-worker-storage
-      mountPath: /var/data
-      sizeGB: 10
+    startCommand: python -m app.worker
+
     envVars:
       - key: PYTHON_VERSION
         value: 3.10.11
@@ -88,7 +76,7 @@ services:
           property: connectionString
       - key: REDIS_URL
         fromService:
-          type: redis
+          type: keyvalue
           name: estateos-redis
           property: connectionString
       - key: SECRET_KEY
@@ -103,51 +91,19 @@ services:
       - key: GEMINI_API_KEY
         sync: false
 
-  # ----------------------------------------------------------------------------
-  # 3. Next.js / React Frontend Single-Page Application (Global Edge CDN)
-  # ----------------------------------------------------------------------------
-  - type: web
-    name: estateos-web
-    runtime: static
-    region: oregon
-    autoDeploy: true
-    branch: main
-    buildCommand: cd frontend && npm install && npm run build
-    staticPublishPath: frontend/dist
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
-    envVars:
-      - key: NODE_VERSION
-        value: 20.11.0
-      - key: VITE_API_URL
-        fromService:
-          type: web
-          name: estateos-api
-          property: host
-      - key: VITE_API_BASE_URL
-        fromService:
-          type: web
-          name: estateos-api
-          property: host
-
-  # ----------------------------------------------------------------------------
-  # 4. Redis In-Memory Task Queue & Cache
-  # ----------------------------------------------------------------------------
-  - type: redis
+  # 3. Redis-compatible task queue
+  - type: keyvalue
     name: estateos-redis
-    region: oregon
-    plan: starter
-    ipAllowList: [] # Accessible only from internal services (api & worker)
+    region: singapore
+    plan: 256mb
+    maxmemoryPolicy: noeviction
+    ipAllowList: []
 
-# ------------------------------------------------------------------------------
-# 5. Managed PostgreSQL Database
-# ------------------------------------------------------------------------------
 databases:
+  # 4. Managed PostgreSQL
   - name: estateos-postgres
     databaseName: estateos
     user: estateos_admin
-    region: oregon
-    plan: starter
+    region: singapore
+    plan: basic-256mb
     postgresMajorVersion: "16"

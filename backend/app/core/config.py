@@ -37,8 +37,8 @@ class Settings(BaseSettings):
         ).split(",")
         if origin.strip()
     ]
-    # Automatically allows all preview and production *.onrender.com frontend domains
-    CORS_ORIGIN_REGEX: Optional[str] = os.getenv("CORS_ORIGIN_REGEX", r"^https:\/\/.*\.onrender\.com$")
+    # Automatically allows all preview and production *.onrender.com and *.vercel.app frontend domains
+    CORS_ORIGIN_REGEX: Optional[str] = os.getenv("CORS_ORIGIN_REGEX", r"^(https:\/\/.*\.onrender\.com|https:\/\/.*\.vercel\.app)$")
     
     # Object Storage Configuration (S3, Cloudflare R2, MinIO, or Persistent Disk)
     STORAGE_BACKEND: str = os.getenv("STORAGE_BACKEND", "local")  # local, s3, cloudinary

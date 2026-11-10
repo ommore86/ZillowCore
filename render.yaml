@@ -43,10 +43,7 @@ services:
           property: connectionString
 
       - key: REDIS_URL
-        fromService:
-          type: keyvalue
-          name: estateos-redis
-          property: connectionString
+        value: ""
 
       - key: SECRET_KEY
         generateValue: true
@@ -55,7 +52,7 @@ services:
         value: "true"
 
       - key: CORS_ORIGIN_REGEX
-        sync: false
+        value: "^(https:\\/\\/.*\\.onrender\\.com|https:\\/\\/.*\\.vercel\\.app)$"
 
       - key: STORAGE_BACKEND
         value: local

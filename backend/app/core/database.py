@@ -4,19 +4,28 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker, declarative_base
 from app.core.config import settings
 
+# Database URL normalization (Render PostgreSQL uses postgres:// which SQLAlchemy 2.0 rejects in favor of postgresql://)
+db_url = settings.DATABASE_URL
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+
 # Engine configuration
 connect_args = {}
-if settings.DATABASE_URL.startswith("sqlite"):
-    connect_args = {"check_same_thread": False}
+engine_kwargs = {"pool_pre_ping": True}
 
-engine = create_engine(
-    settings.DATABASE_URL,
-    connect_args=connect_args,
-    pool_pre_ping=True
-)
+if db_url.startswith("sqlite"):
+    connect_args = {"check_same_thread": False}
+    engine_kwargs["connect_args"] = connect_args
+else:
+    # Production PostgreSQL connection pool tuning
+    engine_kwargs["pool_size"] = 10
+    engine_kwargs["max_overflow"] = 20
+    engine_kwargs["pool_recycle"] = 1800
+
+engine = create_engine(db_url, **engine_kwargs)
 
 # Custom SQLite functions for Geo-Spatial and Vector operations when running on SQLite
-if settings.DATABASE_URL.startswith("sqlite"):
+if db_url.startswith("sqlite"):
     @event.listens_for(engine, "connect")
     def register_sqlite_functions(dbapi_connection, connection_record):
         # 1. Haversine distance in meters

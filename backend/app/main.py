@@ -1,5 +1,7 @@
+import os
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
 from app.core.database import SessionLocal, engine, Base
 from app.services.seed_data import seed_database
@@ -38,14 +40,19 @@ app = FastAPI(
     openapi_url="/api/v1/openapi.json"
 )
 
-# CORS
+# CORS Configuration (allows local dev, desktop tauri, and all Render deployed web domains)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.CORS_ORIGINS if settings.CORS_ORIGINS else ["*"],
+    allow_origin_regex=settings.CORS_ORIGIN_REGEX if settings.CORS_ORIGIN_REGEX else None,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Persistent File Storage Static Mount (Render Disk or local persistent directory)
+os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
 
 # Include All Versioned Routes under /api/v1
 api_prefix = settings.API_V1_STR

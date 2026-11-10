@@ -1,11 +1,45 @@
+const normalizeApiUrl = (rawUrl?: string): string | null => {
+  if (!rawUrl) return null;
+  let clean = rawUrl.trim();
+  if (!clean) return null;
+
+  // Add https protocol if bare domain provided (Render property: host returns e.g. 'estateos-api.onrender.com')
+  if (!clean.startsWith('http://') && !clean.startsWith('https://')) {
+    clean = `https://${clean}`;
+  }
+
+  // Strip trailing slashes
+  clean = clean.replace(/\/+$/, '');
+
+  // Ensure /api/v1 suffix is present
+  if (!clean.endsWith('/api/v1')) {
+    clean = `${clean}/api/v1`;
+  }
+  return clean;
+};
+
 const getBaseUrl = (): string => {
   if (typeof window !== 'undefined') {
-    // If running on Vite dev server (port 3000), use the configured Vite proxy /api/v1
-    if (window.location.port === '3000') {
+    // 1. Runtime override from window or localStorage
+    const runtimeUrl = (window as any).__ESTATEOS_API_URL__ || localStorage.getItem('estateos_api_url');
+    if (runtimeUrl) {
+      const normalized = normalizeApiUrl(runtimeUrl);
+      if (normalized) return normalized;
+    }
+
+    // 2. If running locally on Vite dev server (port 3000 / 5173), route through relative /api/v1 proxy
+    if (window.location.port === '3000' || window.location.port === '5173') {
       return '/api/v1';
     }
   }
-  return (import.meta as any).env?.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api/v1';
+
+  // 3. Environment variables configured during Render build (VITE_API_BASE_URL or VITE_API_URL)
+  const envUrl = (import.meta as any).env?.VITE_API_BASE_URL || (import.meta as any).env?.VITE_API_URL;
+  const normalizedEnv = normalizeApiUrl(envUrl);
+  if (normalizedEnv) return normalizedEnv;
+
+  // 4. Default fallback for local testing
+  return 'http://127.0.0.1:8000/api/v1';
 };
 
 export class ApiService {
@@ -301,6 +335,49 @@ export class ApiService {
       method: 'POST',
       body: JSON.stringify(data),
     });
+  }
+
+  static async uploadDocumentFile(file: File, extra: { title?: string; document_type?: string; property_id?: string; ocr_extracted_text?: string } = {}) {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (extra.title) formData.append('title', extra.title);
+    if (extra.document_type) formData.append('document_type', extra.document_type);
+    if (extra.property_id) formData.append('property_id', extra.property_id);
+    if (extra.ocr_extracted_text) formData.append('ocr_extracted_text', extra.ocr_extracted_text);
+
+    const token = this.getToken();
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const res = await fetch(`${getBaseUrl()}/documents/upload-file`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Upload failed' }));
+      throw new Error(err.detail || 'Upload failed');
+    }
+    return res.json();
+  }
+
+  static async uploadPropertyImage(propertyId: string, file: File) {
+    const formData = new FormData();
+    formData.append('file', file);
+    const token = this.getToken();
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const res = await fetch(`${getBaseUrl()}/properties/${propertyId}/upload-image`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Image upload failed' }));
+      throw new Error(err.detail || 'Image upload failed');
+    }
+    return res.json();
   }
 
   static async analyzeOcr(raw_text: string) {

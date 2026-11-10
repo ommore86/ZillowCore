@@ -12,6 +12,7 @@ from app.schemas.schemas import (
     PropertyUnitCreate, PropertyUnitResponse
 )
 from app.services.ai.ngqr import generate_pseudo_embedding
+from app.services.storage import StorageService
 
 router = APIRouter(prefix="/properties", tags=["Property Management"])
 
@@ -250,4 +251,32 @@ def export_csv(
         media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=estateos_properties_export.csv"}
     )
+
+@router.post("/{id}/upload-image")
+async def upload_property_image(
+    id: str,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Uploads a property asset photograph or architectural rendering to persistent storage."""
+    prop = db.query(Property).filter(Property.id == id, Property.org_id == current_user.org_id).first()
+    if not prop:
+        raise HTTPException(status_code=404, detail="Property asset not found")
+
+    content = await file.read()
+    image_url = StorageService.upload_file(
+        file_bytes=content,
+        filename=file.filename or f"property_{id[:8]}.jpg",
+        content_type=file.content_type or "image/jpeg",
+        folder="properties"
+    )
+
+    current_images = list(prop.images or [])
+    current_images.append(image_url)
+    prop.images = current_images
+    db.commit()
+    db.refresh(prop)
+    log_audit_trail(db, current_user.org_id, "upload_image", "property", prop.id, user_id=current_user.id)
+    return {"status": "success", "image_url": image_url, "total_images": len(prop.images)}
 
